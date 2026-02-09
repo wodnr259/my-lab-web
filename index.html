@@ -403,15 +403,40 @@
             ];
 
             // State with LocalStorage persistence
-            const [techItems, setTechItems] = useState(() => {
-                const saved = localStorage.getItem('dlmd_tech_v3');
-                return saved ? JSON.parse(saved) : initialTech;
-            });
-
+            const [techItems, setTechItems] = useState(initialTech);
             const [notices, setNotices] = useState(() => {
                 const saved = localStorage.getItem('dlmd_notices');
                 return saved ? JSON.parse(saved) : initialNotices;
             });
+
+            const [searchTerm, setSearchTerm] = useState('');
+            const [currentPage, setCurrentPage] = useState(1);
+            const techItemsPerPage = 9;
+            const noticeItemsPerPage = 8;
+
+            // Fetch tech data from JSON for automation
+            useEffect(() => {
+                fetch('./data/tech_data.json')
+                    .then(response => {
+                        if (!response.ok) throw new Error('Fetch failed');
+                        return response.json();
+                    })
+                    .then(data => {
+                        // For automation testing, we always prioritize the JSON file
+                        setTechItems(data);
+                    })
+                    .catch(err => {
+                        console.warn("Failed to load tech_data.json (Check if running on local server):", err);
+                        // Fallback to local storage if available
+                        const saved = localStorage.getItem('dlmd_tech_v3');
+                        if (saved) setTechItems(JSON.parse(saved));
+                    });
+            }, []);
+
+            // Reset page when tab or search changes
+            useEffect(() => {
+                setCurrentPage(1);
+            }, [activeSubTab, searchTerm]);
 
             useEffect(() => {
                 localStorage.setItem('dlmd_tech_v3', JSON.stringify(techItems));
@@ -465,7 +490,7 @@
 
             return (
                 <div className="view-transition relative">
-                    <div className="flex items-center justify-between mb-12 border-b border-gray-100 pb-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 border-b border-gray-100 pb-4 gap-6">
                         <div className="flex gap-8">
                             {['TECH', 'NOTICE'].map(tab => (
                                 <button
@@ -474,16 +499,29 @@
                                     className={`px-2 py-2 text-sm font-black tracking-[0.2em] transition-all relative ${activeSubTab === tab ? 'text-accent' : 'text-gray-300 hover:text-gray-500'}`}
                                 >
                                     {tab}
-                                    {activeSubTab === tab && <div className="absolute bottom-[-2px] left-0 w-full h-1 bg-accent rounded-full" />}
+                                    {activeSubTab === tab && <div className="absolute bottom-[-17px] left-0 w-full h-[3px] bg-accent rounded-full" />}
                                 </button>
                             ))}
                         </div>
-                        <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-full text-xs font-bold hover:bg-accent transition-colors shadow-lg"
-                        >
-                            <Icon name="Plus" size={14} /> 글쓰기
-                        </button>
+
+                        <div className="flex items-center gap-4 flex-1 max-w-md md:justify-end">
+                            <div className="relative flex-1">
+                                <Icon name="Search" size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder={activeSubTab === 'TECH' ? "기술명 또는 내용 검색..." : "공지사항 검색..."}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full bg-gray-50 border-none rounded-full pl-10 pr-6 py-2.5 text-xs font-bold focus:ring-2 focus:ring-accent/20 transition-all placeholder:text-gray-300"
+                                />
+                            </div>
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-full text-xs font-bold hover:bg-accent transition-colors shadow-lg whitespace-nowrap"
+                            >
+                                <Icon name="Plus" size={14} /> 글쓰기
+                            </button>
+                        </div>
                     </div>
 
                     {/* Modal */}
@@ -530,70 +568,126 @@
                     )}
 
                     {activeSubTab === 'TECH' ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {techItems.map((item, i) => (
-                                <div key={i} className="group relative bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm hover:shadow-md transition card-hover">
-                                    <button
-                                        onClick={() => handleDelete(i, 'TECH')}
-                                        className="absolute top-4 right-4 z-20 w-8 h-8 bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-white shadow-sm transition-all opacity-0 group-hover:opacity-100"
-                                    >
-                                        <Icon name="Trash2" size={14} />
-                                    </button>
-                                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
-                                        <div className="aspect-video bg-gray-50 rounded-2xl mb-4 flex items-center justify-center text-gray-200 overflow-hidden relative">
-                                            {getYoutubeThumbnail(item.url) ? (
-                                                <img src={getYoutubeThumbnail(item.url)} alt={item.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                            ) : (
-                                                <Icon name="Youtube" size={32} className="relative z-10 group-hover:text-red-500 transition-colors" />
-                                            )}
-                                            <div className="absolute inset-0 bg-accent/0 group-hover:bg-accent/5 transition-colors" />
-                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-xl">
-                                                    <Icon name="Play" size={20} className="text-gray-900 fill-current ml-1" />
-                                                </div>
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {techItems
+                                    .filter(item =>
+                                        item.tool.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                        item.title.toLowerCase().includes(searchTerm.toLowerCase())
+                                    )
+                                    .slice((currentPage - 1) * techItemsPerPage, currentPage * techItemsPerPage)
+                                    .map((item, i) => {
+                                        const originalIndex = techItems.indexOf(item);
+                                        return (
+                                            <div key={i} className="group relative bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm hover:shadow-md transition card-hover">
+                                                <button
+                                                    onClick={() => handleDelete(originalIndex, 'TECH')}
+                                                    className="absolute top-4 right-4 z-20 w-8 h-8 bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-white shadow-sm transition-all opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Icon name="Trash2" size={14} />
+                                                </button>
+                                                <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
+                                                    <div className="aspect-video bg-gray-50 rounded-2xl mb-4 flex items-center justify-center text-gray-200 overflow-hidden relative">
+                                                        {getYoutubeThumbnail(item.url) ? (
+                                                            <img src={getYoutubeThumbnail(item.url)} alt={item.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                        ) : (
+                                                            <Icon name="Youtube" size={32} className="relative z-10 group-hover:text-red-500 transition-colors" />
+                                                        )}
+                                                        <div className="absolute inset-0 bg-accent/0 group-hover:bg-accent/5 transition-colors" />
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-xl">
+                                                                <Icon name="Play" size={20} className="text-gray-900 fill-current ml-1" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <div className="text-[10px] font-black mono text-accent tracking-tighter uppercase">[{item.tool}]</div>
+                                                        <h5 className="text-[13px] font-bold text-gray-900 leading-snug group-hover:text-accent transition-colors line-clamp-2">
+                                                            {item.title}
+                                                        </h5>
+                                                    </div>
+                                                </a>
                                             </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div className="text-[10px] font-black mono text-accent tracking-tighter uppercase">[{item.tool}]</div>
-                                            <h5 className="text-[13px] font-bold text-gray-900 leading-snug group-hover:text-accent transition-colors line-clamp-2">
-                                                {item.title}
-                                            </h5>
-                                            <div className="pt-2 text-[10px] text-gray-400 font-bold italic">{item.date}</div>
-                                        </div>
-                                    </a>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
-                            <div className="divide-y divide-gray-50">
-                                {notices.map((n, i) => (
-                                    <div key={i} className="p-8 hover:bg-gray-50 transition flex items-center justify-between group">
-                                        <div className="flex items-center gap-6">
-                                            {n.important ? (
-                                                <span className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent text-[10px] font-black">HOT</span>
-                                            ) : (
-                                                <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:text-accent transition-colors">
-                                                    <Icon name="Bell" size={16} />
-                                                </div>
-                                            )}
-                                            <div>
-                                                <div className="text-sm font-bold text-gray-800 group-hover:text-accent transition-colors">{n.title}</div>
-                                                <div className="text-[10px] text-gray-400 font-bold mt-1 uppercase mono">{n.date}</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <button
-                                                onClick={() => handleDelete(i, 'Notice')}
-                                                className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-300 hover:text-red-500 hover:border-red-100 transition shadow-sm opacity-0 group-hover:opacity-100"
-                                            >
-                                                <Icon name="Trash2" size={16} />
-                                            </button>
-                                            <Icon name="ChevronRight" size={18} className="text-gray-200 group-hover:text-accent transition-transform group-hover:translate-x-1" />
-                                        </div>
-                                    </div>
-                                ))}
+                                        );
+                                    })
+                                }
                             </div>
+
+                            {/* TECH Pagination */}
+                            {Math.ceil(techItems.filter(item =>
+                                item.tool.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                item.title.toLowerCase().includes(searchTerm.toLowerCase())
+                            ).length / techItemsPerPage) > 1 && (
+                                    <div className="flex justify-center gap-2 mt-12">
+                                        {[...Array(Math.ceil(techItems.filter(item =>
+                                            item.tool.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            item.title.toLowerCase().includes(searchTerm.toLowerCase())
+                                        ).length / techItemsPerPage))].map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => setCurrentPage(i + 1)}
+                                                className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'bg-white text-gray-400 hover:text-gray-900 border border-gray-50'}`}
+                                            >
+                                                {i + 1}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                        </>
+                    ) : (
+                        <div className="space-y-8">
+                            <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
+                                <div className="divide-y divide-gray-50">
+                                    {notices
+                                        .filter(n => n.title.toLowerCase().includes(searchTerm.toLowerCase()))
+                                        .slice((currentPage - 1) * noticeItemsPerPage, currentPage * noticeItemsPerPage)
+                                        .map((n, i) => {
+                                            const originalIndex = notices.indexOf(n);
+                                            return (
+                                                <div key={i} className="p-8 hover:bg-gray-50 transition flex items-center justify-between group">
+                                                    <div className="flex items-center gap-6">
+                                                        {n.important ? (
+                                                            <span className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent text-[10px] font-black">HOT</span>
+                                                        ) : (
+                                                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:text-accent transition-colors">
+                                                                <Icon name="Bell" size={16} />
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <div className="text-sm font-bold text-gray-800 group-hover:text-accent transition-colors">{n.title}</div>
+                                                            <div className="text-[10px] text-gray-400 font-bold mt-1 uppercase mono">{n.date}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <button
+                                                            onClick={() => handleDelete(originalIndex, 'Notice')}
+                                                            className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-300 hover:text-red-500 hover:border-red-100 transition shadow-sm opacity-0 group-hover:opacity-100"
+                                                        >
+                                                            <Icon name="Trash2" size={16} />
+                                                        </button>
+                                                        <Icon name="ChevronRight" size={18} className="text-gray-200 group-hover:text-accent transition-transform group-hover:translate-x-1" />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    }
+                                </div>
+                            </div>
+
+                            {/* NOTICE Pagination */}
+                            {Math.ceil(notices.filter(n => n.title.toLowerCase().includes(searchTerm.toLowerCase())).length / noticeItemsPerPage) > 1 && (
+                                <div className="flex justify-center gap-2">
+                                    {[...Array(Math.ceil(notices.filter(n => n.title.toLowerCase().includes(searchTerm.toLowerCase())).length / noticeItemsPerPage))].map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setCurrentPage(i + 1)}
+                                            className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'bg-white text-gray-400 hover:text-gray-900 border border-gray-50'}`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
