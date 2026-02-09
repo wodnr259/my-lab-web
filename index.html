@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nature & AI Convergence Lab</title>
+    <title>Digital Landscape and Memory Design Lab</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM CDN -->
@@ -12,40 +12,40 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <!-- Babel CDN for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Lucide React UMD (Better for React) -->
+    <!-- Lucide React UMD -->
     <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.min.js"></script>
     <!-- Google Fonts -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <style>
         body {
-            background-color: #050505;
-            color: #f3f4f6;
+            background-color: #ffffff;
+            color: #111827;
             font-family: 'Inter', sans-serif;
-            scroll-behavior: smooth;
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
         }
 
         #root {
             min-height: 100vh;
         }
 
-        .text-neon {
-            color: #CCFF00;
+        .text-accent {
+            color: #10B981;
         }
 
-        .bg-neon {
-            background-color: #CCFF00;
+        .bg-accent {
+            background-color: #10B981;
         }
 
-        .border-neon {
-            border-color: #CCFF00;
+        .border-accent {
+            border-color: #10B981;
         }
 
-        .shadow-neon {
-            box-shadow: 0 0 15px rgba(204, 255, 0, 0.3);
+        .shadow-accent {
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
         }
 
         .mono {
@@ -53,36 +53,55 @@
         }
 
         .glass {
-            background: rgba(10, 10, 10, 0.8);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #6B7280;
+        }
+
+        .nav-item.active {
+            color: #10B981;
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #10B981;
         }
 
         .card-hover:hover {
-            border-color: #CCFF00;
+            border-color: rgba(16, 185, 129, 0.3);
             transform: translateY(-4px);
             transition: all 0.3s ease;
+            background: #F9FAFB;
         }
 
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
+        .view-transition {
+            animation: fadeInScale 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        ::-webkit-scrollbar-track {
-            background: #050505;
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #CCFF00;
-        }
-
-        /* Loading animation */
         .loading-screen {
             height: 100vh;
             display: flex;
@@ -90,13 +109,14 @@
             justify-content: center;
             flex-direction: column;
             gap: 1rem;
+            background: #ffffff;
         }
 
         .spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid rgba(204, 255, 0, 0.1);
-            border-top: 4px solid #CCFF00;
+            border: 2px solid rgba(16, 185, 129, 0.1);
+            border-top: 2px solid #10B981;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -110,312 +130,316 @@
                 transform: rotate(360deg);
             }
         }
+
+        .bg-grid {
+            background-image: linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        .placeholder-box {
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+        }
     </style>
 </head>
 
-<body>
-    <div id="root">
-        <div class="loading-screen">
-            <div class="spinner"></div>
-            <p class="mono text-neon text-xs tracking-widest">INITIALIZING_SYSTEM...</p>
-        </div>
-    </div>
+<body class="bg-grid">
+    <div id="root"></div>
 
     <script type="text/babel">
-        // Ensure scripts are loaded
         const { useState, useEffect } = React;
-
-        // Use LucideReact global instead of lucide
-        // Typically UMD exports it as LucideReact
         const Lucide = window.LucideReact || {};
 
-        // Helper to get icons safely
-        const Icon = ({ name, ...props }) => {
+        const Icon = ({ name, size = 20, className = "", color = "currentColor" }) => {
             const SvgIcon = Lucide[name];
-            if (!SvgIcon) return <span className="text-[10px] opacity-20">[Icon:{name}]</span>;
-            return <SvgIcon {...props} />;
+            if (!SvgIcon) return null;
+            return <SvgIcon size={size} className={className} color={color} />;
         };
 
-        // --- Components ---
-
-        const Navbar = () => (
-            <nav className="fixed top-0 left-0 right-0 z-50 glass">
-                <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-                    <div className="text-2xl font-bold flex items-center gap-2">
-                        <div className="w-8 h-8 bg-neon rounded flex items-center justify-center">
-                            <Icon name="Layers" size={20} color="black" />
-                        </div>
-                        <span className="tracking-tighter uppercase font-black">Landscape<span className="text-neon">AI</span></span>
-                    </div>
-                    <div className="hidden md:flex gap-8 text-sm font-medium uppercase tracking-widest text-gray-400">
-                        <a href="#professor" className="hover:text-neon transition">Professor</a>
-                        <a href="#research" className="hover:text-neon transition">Research</a>
-                        <a href="#projects" className="hover:text-neon transition">Projects</a>
-                        <a href="#people" className="hover:text-neon transition">People</a>
-                        <a href="#board" className="hover:text-neon transition">Board</a>
-                    </div>
+        const Home = () => (
+            <div className="view-transition flex flex-col justify-center min-h-[60vh] border-l-2 border-accent/20 pl-8 md:pl-16">
+                <div className="mono text-accent text-sm mb-4 tracking-[0.3em] uppercase font-bold">System Core / Welcome</div>
+                <h1 className="text-5xl md:text-8xl font-black leading-tight mb-8 tracking-tighter text-gray-900">
+                    DIGITAL<br />
+                    <span className="text-accent">LANDSCAPE</span> & <br />
+                    MEMORY DESIGN
+                </h1>
+                <p className="text-lg md:text-xl text-gray-600 max-w-3xl leading-relaxed font-light">
+                    <b className="text-gray-900">Digital Landscape and Memory Design Lab</b>은 청주대학교 박재민 교수님과 함께합니다. <br />
+                    우리는 조경 설계와 디지털 트윈, 그리고 AI 기술을 융합하여 장소의 기억을 기록하고<br />
+                    미래의 지속 가능한 경관을 설계하는 혁신적인 연구를 수행합니다.
+                </p>
+                <div className="mt-12 flex gap-6">
+                    <div className="px-6 py-3 bg-accent text-white mono text-xs uppercase tracking-widest font-bold shadow-accent hover:bg-emerald-600 transition cursor-pointer">Explore Research</div>
                 </div>
-            </nav>
+            </div>
         );
 
-        const SectionHeader = ({ title, subtitle }) => (
-            <div className="mb-12">
-                <h2 className="text-xs mono text-neon uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <div className="w-10 h-[1px] bg-neon"></div> {subtitle}
-                </h2>
-                <h3 className="text-4xl font-bold">{title}</h3>
+        const Professor = () => (
+            <div className="view-transition space-y-12">
+                <div className="flex flex-col md:flex-row gap-12 items-start">
+                    <div className="w-full md:w-1/3 aspect-[3/4] rounded-3xl overflow-hidden border border-gray-100 shadow-sm relative group placeholder-box">
+                        {/* Image Placeholder */}
+                        <Icon name="User" size={80} color="#e5e7eb" />
+                        <div className="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </div>
+                    <div className="flex-1 space-y-8 text-gray-900">
+                        <div>
+                            <div className="mono text-accent text-xs mb-2 uppercase tracking-widest font-bold">// Principal Investigator</div>
+                            <h2 className="text-5xl font-black mb-2 tracking-tight">박재민 교수 <span className="text-xl font-light text-gray-400 ml-4">Jaemin Park, Ph.D.</span></h2>
+                            <p className="text-gray-500 text-lg uppercase tracking-wider font-semibold">청주대학교 조경학과</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-4">
+                                <h3 className="mono text-sm text-accent border-b border-accent/20 pb-2 font-bold">Academic Background</h3>
+                                <ul className="text-sm text-gray-600 space-y-2 font-medium">
+                                    <li>• Ph.D. in Landscape Architecture & Engineering</li>
+                                    <li>• M.L.A. in Environmental Design</li>
+                                    <li>• B.S. in Landscape Architecture</li>
+                                </ul>
+                            </div>
+                            <div className="space-y-4">
+                                <h3 className="mono text-sm text-accent border-b border-accent/20 pb-2 font-bold">Contact Info</h3>
+                                <div className="space-y-2 text-sm text-gray-600 font-medium">
+                                    <div className="flex items-center gap-2"><Icon name="Mail" size={14} className="text-accent" /> parkjm@cju.ac.kr</div>
+                                    <div className="flex items-center gap-2"><Icon name="MapPin" size={14} className="text-accent" /> 청주대학교 공과대학 본관</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100">
+                            <h3 className="mono text-sm text-accent mb-4 tracking-widest font-bold">RESEARCH PHILOSOPHY</h3>
+                            <p className="text-gray-700 leading-relaxed italic font-medium">
+                                "우리는 경관 속에 담긴 기억(Memory)을 디지털 데이터로 치환하고, <br />
+                                이를 AI와 결합하여 다음 세대를 위한 새로운 장소의 경험을 디자인합니다."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const Research = () => (
+            <div className="view-transition grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[
+                    { id: '01', nm: 'Digital Twin Landscape', desc: '실세계 경관을 고정밀 LiDAR 데이터로 스캔하여 가상 세계에 구현합니다.', icon: 'Layers' },
+                    { id: '02', nm: 'Memory Design Tool', desc: '장소에 얽힌 역사와 기억을 시각화하고 디지털로 보존하는 방법론을 연구합니다.', icon: 'Brain' },
+                    { id: '03', nm: 'AI Generation Design', desc: '인공지능을 활용하여 기후 위기에 대응하는 최적의 조경 설계를 생성합니다.', icon: 'Cpu' },
+                    { id: '04', nm: 'Smart City UX', desc: '스마트 시티 유저 경험을 위한 인터랙티브 조경 요소를 개발합니다.', icon: 'Smartphone' },
+                    { id: '05', nm: 'Cultural Heritage Data', desc: '문화유산 경관의 변천사를 빅데이터로 분석합니다.', icon: 'Database' },
+                    { id: '06', nm: 'Metaverse Reality', desc: '현실과 가상이 융합된 혼합현실 경관을 설계합니다.', icon: 'Globe' }
+                ].map((item, i) => (
+                    <div key={i} className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm card-hover group">
+                        <div className="flex justify-between items-start mb-6">
+                            <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition shadow-sm">
+                                <Icon name={item.icon} size={24} />
+                            </div>
+                            <span className="mono text-[10px] text-gray-300 font-bold">{item.id}</span>
+                        </div>
+                        <h4 className="text-xl font-bold mb-3 text-gray-900 group-hover:text-accent transition">{item.nm}</h4>
+                        <p className="text-sm text-gray-500 leading-relaxed font-medium">{item.desc}</p>
+                    </div>
+                ))}
+            </div>
+        );
+
+        const Projects = () => (
+            <div className="view-transition grid grid-cols-1 md:grid-cols-2 gap-12">
+                {[
+                    { title: "Smart Forest Digital Twin", tag: "LiDAR / AI" },
+                    { title: "Memory Archive Project", tag: "Design / Data" },
+                    { title: "Climate Adaptive Park", tag: "Sustainability" },
+                    { title: "AI-Based Urban Planning", tag: "Automation" }
+                ].map((proj, i) => (
+                    <div key={i} className="group cursor-pointer">
+                        <div className="aspect-video rounded-[2.5rem] overflow-hidden border border-gray-100 relative mb-6 shadow-sm placeholder-box">
+                            {/* Image Placeholder */}
+                            <Icon name="Image" size={48} color="#e5e7eb" />
+                            <div className="absolute top-6 left-6 z-20">
+                                <span className="bg-white/90 text-accent px-4 py-1.5 text-[10px] mono border border-accent/20 rounded-full uppercase tracking-tighter font-bold">{proj.tag}</span>
+                            </div>
+                        </div>
+                        <h5 className="text-2xl font-black text-gray-900 group-hover:text-accent transition tracking-tight flex items-center justify-between">
+                            {proj.title} <Icon name="ArrowUpRight" size={20} className="text-accent opacity-0 group-hover:opacity-100 transition" />
+                        </h5>
+                        <p className="text-gray-500 text-sm mt-3 font-medium leading-relaxed">도시 공간의 역사적 가치를 보존하며 최첨단 기술로 신규 공간을 창출하는 핵심 프로젝트입니다.</p>
+                    </div>
+                ))}
+            </div>
+        );
+
+        const People = () => (
+            <div className="view-transition grid grid-cols-1 md:grid-cols-2 gap-16">
+                <div>
+                    <h4 className="text-3xl font-black mb-8 italic flex items-center gap-3 text-gray-900">
+                        <div className="w-8 h-1 bg-accent"></div> Ph.D. Candidates
+                    </h4>
+                    <div className="space-y-6">
+                        {[1, 2].map(i => (
+                            <div key={i} className="flex gap-6 p-6 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition">
+                                <div className="w-24 h-24 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200">
+                                    <Icon name="User" size={40} />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-bold text-gray-900">연구원 A</div>
+                                    <div className="mono text-accent text-[10px] uppercase mt-1 tracking-widest font-bold">Landscape Informatics</div>
+                                    <p className="text-xs text-gray-500 mt-2 font-medium">Deep Learning based Tree Point Cloud Segmentation</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <h4 className="text-3xl font-black mb-8 italic flex items-center gap-3 text-gray-900">
+                        <div className="w-8 h-1 bg-accent"></div> Master Students
+                    </h4>
+                    <div className="space-y-6">
+                        {[1, 2].map(i => (
+                            <div key={i} className="flex gap-6 p-6 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition">
+                                <div className="w-24 h-24 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200">
+                                    <Icon name="User" size={40} />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-bold text-gray-900">석사과정 B</div>
+                                    <div className="mono text-accent text-[10px] uppercase mt-1 tracking-widest font-bold">Memory Design</div>
+                                    <p className="text-xs text-gray-500 mt-2 font-medium">VR based Landscape Heritage Visualization</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const Board = () => (
+            <div className="view-transition grid grid-cols-1 md:grid-cols-2 gap-0 border border-gray-100 rounded-[3rem] overflow-hidden shadow-xl bg-white mb-20">
+                <div className="p-12 border-r border-gray-50 bg-gray-50/30">
+                    <h5 className="text-3xl font-black mb-10 flex items-center gap-4 text-gray-900">
+                        <Icon name="Youtube" className="text-red-500" size={32} /> AI TECH
+                    </h5>
+                    <div className="space-y-8">
+                        {[
+                            { title: "[Tutorial] NeRF for Landscape Architects", date: "25.01.10" },
+                            { title: "Generative AI and the Future of Urban Design", date: "24.12.28" },
+                            { title: "LiDAR Point Cloud Processing with Python", date: "24.12.15" }
+                        ].map((item, i) => (
+                            <div key={i} className="group cursor-pointer flex gap-6 items-center">
+                                <div className="w-32 h-20 bg-gray-200 rounded-2xl flex items-center justify-center group-hover:bg-accent/10 transition overflow-hidden">
+                                    <Icon name="PlayCircle" size={32} className="text-gray-400 group-hover:text-accent" />
+                                </div>
+                                <div className="flex-1">
+                                    <h6 className="font-bold text-gray-900 group-hover:text-accent transition">{item.title}</h6>
+                                    <span className="mono text-[10px] text-gray-400 font-bold italic uppercase">{item.date}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div className="p-12">
+                    <h5 className="text-3xl font-black mb-10 flex items-center gap-4 text-gray-900">
+                        <Icon name="Bell" className="text-yellow-500" size={32} /> NOTICE
+                    </h5>
+                    <div className="space-y-4">
+                        {[
+                            { title: "박재민 교수님, 2024 올해의 조경인상 수상!", date: "25.02.05", important: true },
+                            { title: "2025학년도 1학기 연구실 세미나 일정 안내", date: "25.01.20", important: false },
+                            { title: "국가연구과제 '디지털 트윈 기반 탄소 조경' 선정", date: "25.01.05", important: false }
+                        ].map((n, i) => (
+                            <div key={i} className="p-6 rounded-[1.5rem] hover:bg-gray-50 transition flex justify-between items-center group border border-transparent hover:border-gray-100">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3">
+                                        {n.important && <span className="bg-accent text-white text-[9px] px-2 py-0.5 font-bold rounded">HOT</span>}
+                                        <h6 className="font-bold text-gray-900 group-hover:text-accent transition">{n.title}</h6>
+                                    </div>
+                                    <div className="mono text-[10px] text-gray-400 mt-1 uppercase font-bold">{n.date}</div>
+                                </div>
+                                <Icon name="ChevronRight" size={16} className="text-gray-200 group-hover:text-accent" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         );
 
         const App = () => {
-            const [isLoaded, setIsLoaded] = useState(false);
+            const [currentView, setCurrentView] = useState('Home');
+            const [isLoading, setIsLoading] = useState(true);
 
             useEffect(() => {
-                // Short delay to ensure everything is ready
-                const timer = setTimeout(() => setIsLoaded(true), 500);
+                const timer = setTimeout(() => setIsLoading(false), 500);
                 return () => clearTimeout(timer);
             }, []);
 
-            if (!isLoaded) return (
+            if (isLoading) return (
                 <div className="loading-screen">
                     <div className="spinner"></div>
-                    <p className="mono text-neon text-xs tracking-widest">LOADING_COMPONENTS...</p>
+                    <p className="mono text-accent text-xs tracking-widest font-bold">DIGITALIZING_ENVIRONMENT...</p>
                 </div>
             );
 
+            const renderView = () => {
+                switch (currentView) {
+                    case 'Home': return <Home />;
+                    case 'Professor': return <Professor />;
+                    case 'Research': return <Research />;
+                    case 'Projects': return <Projects />;
+                    case 'People': return <People />;
+                    case 'Board': return <Board />;
+                    default: return <Home />;
+                }
+            };
+
             return (
-                <div className="min-h-screen pt-24 pb-20 px-6 animate-in fade-in duration-700">
-                    <Navbar />
-
-                    <main className="max-w-7xl mx-auto space-y-32">
-
-                        {/* Hero Section */}
-                        <section className="h-[60vh] flex flex-col justify-center border-l-2 border-neon/30 pl-8 ml-4">
-                            <h1 className="text-6xl md:text-8xl font-black leading-none mb-6">
-                                BRIDGING<br />
-                                <span className="text-neon">NATURE</span> & <br />
-                                DIGITAL TWIN
-                            </h1>
-                            <p className="text-xl text-gray-400 max-w-2xl leading-relaxed">
-                                LiDAR 스캔 데이터와 인공지능 기술을 결합하여, 실세계의 자연 환경을 디지털로 재구성하고 탄소 중립 및 최적의 조경 설계를 연구합니다.
-                            </p>
-                        </section>
-
-                        {/* Professor Section */}
-                        <section id="professor">
-                            <SectionHeader title="Principal Investigator" subtitle="01 Mastermind" />
-                            <div className="glass p-8 rounded-2xl flex flex-col md:flex-row gap-8 items-center border border-white/5 hover:border-neon transition-all duration-500">
-                                <div className="w-48 h-48 bg-zinc-800 rounded-xl overflow-hidden grayscale hover:grayscale-0 transition-all">
-                                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&h=200&auto=format&fit=crop" alt="Professor" className="w-full h-full object-cover" />
+                <div className="min-h-screen">
+                    <header className="fixed top-0 left-0 right-0 z-50 glass">
+                        <div className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
+                            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setCurrentView('Home')}>
+                                <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-accent">
+                                    <Icon name="Trello" size={24} color="white" />
                                 </div>
-                                <div className="flex-1 space-y-4">
-                                    <h4 className="text-3xl font-bold">김철수 교수 <span className="text-lg font-normal text-gray-500 ml-2">Chul-soo Kim, Ph.D.</span></h4>
-                                    <div className="mono text-sm text-neon flex items-center gap-2">
-                                        <Icon name="Mail" size={14} /> prof.kim@university.ac.kr
-                                    </div>
-                                    <div className="text-gray-400 leading-relaxed text-sm space-y-2">
-                                        <p>• Ph.D. in AI & Environmental Design, MIT</p>
-                                        <p>• 전) 글로벌 스마트 시티 연구소 수석 연구원</p>
-                                        <p>• 현) 한국 조경-AI 협회 상임 이사</p>
-                                    </div>
-                                    <div className="flex gap-4 pt-2">
-                                        <div className="p-2 border border-white/10 rounded-full hover:border-neon hover:text-neon cursor-pointer transition"><Icon name="Linkedin" size={18} /></div>
-                                        <div className="p-2 border border-white/10 rounded-full hover:border-neon hover:text-neon cursor-pointer transition"><Icon name="Github" size={18} /></div>
-                                    </div>
+                                <div className="flex flex-col -gap-1">
+                                    <span className="text-xl font-black text-gray-900 tracking-tighter leading-none">DIGITAL LANDSCAPE<span className="text-accent italic">.</span></span>
+                                    <span className="text-[10px] mono text-gray-400 tracking-widest font-bold uppercase">Memory Design Lab</span>
                                 </div>
                             </div>
-                        </section>
-
-                        {/* Research Section */}
-                        <section id="research">
-                            <SectionHeader title="Research Keywords" subtitle="02 Areas of Focus" />
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                {[
-                                    { name: "LiDAR Scan", icon: "Layers" },
-                                    { name: "Carbon Neutral", icon: "Globe" },
-                                    { name: "Digital Twin", icon: "Database" },
-                                    { name: "ML Vision", icon: "Cpu" }
-                                ].map((item, i) => (
-                                    <div key={i} className="glass p-6 rounded-xl group hover:bg-neon hover:text-black transition-all cursor-default">
-                                        <div className="text-neon group-hover:text-black mb-4">
-                                            <Icon name={item.icon} size={24} />
-                                        </div>
-                                        <div className="font-bold text-lg">{item.name}</div>
-                                        <div className="text-xs uppercase mono mt-2 opacity-60">Technical Integration</div>
+                            <nav className="hidden lg:flex gap-10">
+                                {['Home', 'Professor', 'Research', 'Projects', 'People', 'Board'].map(view => (
+                                    <div
+                                        key={view}
+                                        className={`nav-item text-xs mono uppercase tracking-widest font-black ${currentView === view ? 'active' : 'hover:text-gray-900'}`}
+                                        onClick={() => setCurrentView(view)}
+                                    >
+                                        {view}
                                     </div>
                                 ))}
-                            </div>
-                        </section>
+                            </nav>
+                        </div>
+                    </header>
 
-                        {/* Projects Section */}
-                        <section id="projects">
-                            <SectionHeader title="Core Projects" subtitle="03 Gallery" />
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                {[
-                                    { title: "Smart City Digital Forest", tag: "AI Vision", img: "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?q=80&w=600&auto=format&fit=crop" },
-                                    { title: "LiDAR Based Biomass Analysis", tag: "Big Data", img: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=600&auto=format&fit=crop" },
-                                    { title: "Generative Landscape Design", tag: "GenAI", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=600&auto=format&fit=crop" }
-                                ].map((proj, i) => (
-                                    <div key={i} className="glass rounded-2xl overflow-hidden group card-hover border border-white/5">
-                                        <div className="h-48 overflow-hidden relative">
-                                            <div className="absolute inset-0 bg-neon/20 z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                            <img src={proj.img} alt={proj.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-110" />
-                                            <div className="absolute top-4 left-4 z-20">
-                                                <span className="bg-black/80 text-neon px-3 py-1 text-[10px] mono rounded-full border border-neon/50 uppercase">{proj.tag}</span>
-                                            </div>
-                                        </div>
-                                        <div className="p-6">
-                                            <h5 className="text-xl font-bold mb-2 group-hover:text-neon transition">{proj.title}</h5>
-                                            <p className="text-sm text-gray-500 line-clamp-2">도시 환경의 효과적인 탄소 흡수를 위한 신개념 디지털 숲 조성 프로젝트입니다.</p>
-                                            <div className="mt-4 flex justify-between items-center">
-                                                <span className="text-[10px] mono text-gray-600">2025.10 - 2026.12</span>
-                                                <Icon name="ChevronRight" size={16} className="text-neon" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-
-                        {/* People Section */}
-                        <section id="people">
-                            <SectionHeader title="Research Members" subtitle="04 People" />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                                <div className="space-y-4">
-                                    <h5 className="text-neon mono text-sm mb-4">// Ph.D. Researchers</h5>
-                                    {[
-                                        { nm: "이박사", en: "Dr. Lee", rs: "Multispectral LiDAR Processing" },
-                                        { nm: "김박사", en: "Dr. Kim", rs: "Urban Carbon Modeling" }
-                                    ].map((p, i) => (
-                                        <div key={i} className="flex items-center gap-4 py-3 border-b border-white/5 hover:border-neon transition cursor-pointer group">
-                                            <div className="w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center font-bold text-gray-400 group-hover:bg-neon group-hover:text-black">P{i + 1}</div>
-                                            <div>
-                                                <div className="font-bold">{p.nm} ({p.en})</div>
-                                                <div className="text-xs text-gray-500">{p.rs}</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="space-y-4">
-                                    <h5 className="text-neon mono text-sm mb-4">// Master Students</h5>
-                                    {[
-                                        { nm: "최석사", en: "S. Choi", rs: "Generative Forest Simulation" },
-                                        { nm: "박석사", en: "Y. Park", rs: "AI-based Terrain Analysis" }
-                                    ].map((p, i) => (
-                                        <div key={i} className="flex items-center gap-4 py-3 border-b border-white/5 hover:border-neon transition cursor-pointer group">
-                                            <div className="w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center font-bold text-gray-400 group-hover:bg-neon group-hover:text-black">M{i + 1}</div>
-                                            <div>
-                                                <div className="font-bold">{p.nm} ({p.en})</div>
-                                                <div className="text-xs text-gray-500">{p.rs}</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Board Section */}
-                        <section id="board" className="pt-10">
-                            <SectionHeader title="Updates & Community" subtitle="05 Board" />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-
-                                {/* AI Tech Board */}
-                                <div className="p-8 border-r border-white/10 bg-zinc-900/40 relative group">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <h5 className="text-2xl font-black flex items-center gap-3">
-                                            <Icon name="Youtube" className="text-red-500" /> AI TECH
-                                        </h5>
-                                        <span className="text-[10px] mono text-gray-500 border border-gray-700 px-2 py-1 rounded">CURATED FEED</span>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        {[
-                                            { title: "Understanding Neural Radiance Fields (NeRF)", site: "YouTube", date: "24.12.01" },
-                                            { title: "LiDAR and AI for Environment monitoring", site: "DeepMind Blog", date: "24.11.15" },
-                                            { title: "Sustainable City Planning with LLMs", site: "arXiv", date: "24.11.10" }
-                                        ].map((item, i) => (
-                                            <div key={i} className="group/item cursor-pointer">
-                                                <div className="flex gap-4">
-                                                    <div className="w-24 h-14 bg-zinc-800 rounded-md overflow-hidden border border-white/5 group-hover/item:border-neon/50 transition">
-                                                        <div className="w-full h-full bg-gradient-to-br from-zinc-700 to-black flex items-center justify-center">
-                                                            <Icon name="Play" size={16} className="text-white/20" />
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h6 className="font-bold text-sm group-hover/item:text-neon transition leading-snug">{item.title}</h6>
-                                                        <div className="flex justify-between items-center mt-2 text-[10px] mono text-gray-500">
-                                                            <span>{item.site}</span>
-                                                            <span>{item.date}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-10 p-4 border border-dashed border-neon/20 rounded-xl bg-neon/5 text-center text-xs text-neon/80 mono cursor-pointer hover:bg-neon/10 transition">
-                                        + LOAD MORE TECH INSIGHTS
-                                    </div>
-                                </div>
-
-                                {/* Notice Board */}
-                                <div className="p-8 bg-zinc-900/20">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <h5 className="text-2xl font-black flex items-center gap-3">
-                                            <Icon name="Bell" className="text-yellow-500" /> NOTICE
-                                        </h5>
-                                        <span className="text-[10px] mono text-gray-500 border border-gray-700 px-2 py-1 rounded">LAB NEWS</span>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        {[
-                                            { title: "2024년 동계 학술대회 최우수 논문상 수상 (김철수 교수)", status: "New", date: "25.01.20" },
-                                            { title: "국토교통부 지원 스마트 시티 실증 사업 선정", status: "", date: "25.01.12" },
-                                            { title: "2월 연구실 정기 워크샵 공지 (제주 발트빌)", status: "", date: "24.12.30" },
-                                            { title: "석사 과정 신입생 모집 공고 (2025년)", status: "Important", date: "24.12.15" }
-                                        ].map((notice, i) => (
-                                            <div key={i} className="flex items-start gap-4 p-4 rounded-xl hover:bg-white/5 transition cursor-pointer group">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        {notice.status && (
-                                                            <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold uppercase ${notice.status === 'New' ? 'bg-neon text-black' : 'bg-red-500 text-white'}`}>
-                                                                {notice.status}
-                                                            </span>
-                                                        )}
-                                                        <h6 className="font-bold text-sm group-hover:text-neon transition">{notice.title}</h6>
-                                                    </div>
-                                                    <div className="text-[10px] mono text-gray-500">{notice.date}</div>
-                                                </div>
-                                                <Icon name="ChevronRight" size={14} className="text-gray-700 font-bold group-hover:text-neon" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-6 flex justify-end">
-                                        <button className="text-[10px] mono text-gray-400 hover:text-white flex items-center gap-1">
-                                            VIEW ALL POSTS <Icon name="ChevronRight" size={12} />
-                                        </button>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </section>
-
+                    <main className="max-w-7xl mx-auto px-6 pt-44 pb-20">
+                        {renderView()}
                     </main>
 
-                    <footer className="max-w-7xl mx-auto mt-40 pt-20 border-t border-white/5 text-center text-gray-500 text-sm">
-                        <div className="mono text-neon/40 text-[10px] mb-4 tracking-widest uppercase">Autonomous Convergence Systems Lab</div>
-                        <p>© 2026 Landscape + AI Research Lab. All rights reserved.</p>
-                        <div className="flex justify-center gap-6 mt-8 grayscale opacity-30">
-                            <span className="mono text-[10px] border border-white/10 px-2 py-1">UNIVERSITY LOGO</span>
-                            <span className="mono text-[10px] border border-white/10 px-2 py-1">COLLEGE LOGO</span>
+                    <footer className="max-w-7xl mx-auto px-6 py-20 border-t border-gray-100">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                            <div className="space-y-6">
+                                <h6 className="text-xl font-black tracking-tighter text-gray-900 uppercase">Digital Landscape and Memory Design Lab.</h6>
+                                <p className="text-sm text-gray-500 font-medium leading-relaxed max-w-md">
+                                    청주대학교 조경학과 박재민 교수님 연구실. 우리는 경관의 기억을 디지털로 재구성하고 새로운 창조의 기반을 마련합니다.
+                                </p>
+                            </div>
+                            <div className="flex flex-col md:items-end gap-3 uppercase mono text-[10px] text-gray-400 font-bold">
+                                <div className="text-gray-900">CHEONGJU UNIVERSITY / DEPT. OF LANDSCAPE ARCHITECTURE</div>
+                                <div>Engineering Bldg 1, No. 302, 298 Daeseong-ro, Cheongwon-gu, Cheongju</div>
+                                <div className="text-accent/60 mt-4 tracking-widest">© 2026 DLMD Lab. All rights reserved.</div>
+                            </div>
                         </div>
                     </footer>
-
-                    {/* Floating HUD Effect */}
-                    <div className="fixed bottom-8 left-8 p-4 mono text-[10px] text-neon/20 border border-neon/10 rounded pointer-events-none hidden lg:block">
-                        SYSTEM_STATUS: RUNNING<br />
-                        LATENCY: 12ms<br />
-                        NODE_01: ONLINE
-                    </div>
                 </div>
             );
         };
